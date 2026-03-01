@@ -1,5 +1,3 @@
-
-print("s")
 from dotenv import load_dotenv
 import requests
 import os
@@ -26,9 +24,13 @@ headers = {
     "Accept": "application/json"
 }
 
+#Appends all data for all reservations onto a list which is then later filtered into the result list
+#Which only contains the desired data
+#limit is upper threshold of how many reservations can be retrieved
+#
 def get_reservations():
     all_reservations = []
-    skip = 0
+
     limit = 100 
 
     response = requests.get(
@@ -36,7 +38,7 @@ def get_reservations():
         headers=headers,
         params={
             "limit": limit,
-            "skip": skip
+            
         }
     )
     data = response.json()
@@ -45,6 +47,7 @@ def get_reservations():
     all_reservations.extend(reservations)
 
     result = []
+    #TO DO: Figure out what the relevant data is
     for reservation in all_reservations:
         guest_id = reservation.get("guestId")
         check_in = reservation.get("checkIn")
