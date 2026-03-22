@@ -90,3 +90,5 @@ def get_reservations():
     else:
         print(f"Failed to fetch reservations: {response.status_code} - {response.text}")
     return all_reservations
+
+#Test
