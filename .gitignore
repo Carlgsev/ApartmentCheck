@@ -1,3 +1,4 @@
 .env
 guesty.env
 unloc.env
+*.csv
