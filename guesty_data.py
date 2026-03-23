@@ -31,7 +31,7 @@ def get_access_token():
         f.write(f"CLIENT_SECRET={guesty_client_secret}\n")
         f.write(f"GUESTY_TOKEN={token}\n")
 
-    
+    return token
 
 
 import json
@@ -70,7 +70,7 @@ def export_listings_csv():
 
 def get_reservations():
     """Fetches all reservations from Guesty and returns them as a list."""
-    token = get_access_token()
+    token = os.getenv("GUESTY_TOKEN")
     listing_id = "69a3602adb141046778e0aee"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -79,7 +79,7 @@ def get_reservations():
     all_reservations = []
     limit = 100
     response = requests.get(
-        "https://open-api.guesty.com/v1/listings/{listing_id}",
+        f"https://open-api.guesty.com/v1/reservations?listingId={listing_id}",
         headers=headers,
         params={"limit": limit},
     )
@@ -91,4 +91,22 @@ def get_reservations():
         print(f"Failed to fetch reservations: {response.status_code} - {response.text}")
     return all_reservations
 
-#Test
+def extract_apartment_number():
+    with open("listings_raw.json") as f:
+        data = json.load(f)
+
+    result = {}
+    output_path = "dictionary.json"
+
+    for listing in data:
+        listing_id = listing.get("_id")
+        apartment = listing.get("address", {}).get("apartment")
+
+        if listing_id:
+            result[listing_id] = apartment
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=4)
+
+    print(f"Apartment dictionary saved to: {output_path}")
+    

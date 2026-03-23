@@ -7,6 +7,7 @@ load_dotenv("unloc.env")
 
 unloc_client_ID = os.getenv("UNLOC_CLIENT_ID")
 unloc_client_secret = os.getenv("UNLOC_CLIENT_SECRET")
+unloc_token = os.getenv("UNLOC_TOKEN")
 
 PROJECT_ID = "555f5120-1427-43c0-87fd-d23b2cc986a3"
 
@@ -23,13 +24,15 @@ def get_unloc_token():
     )
     token_data = response.json()
     token = token_data.get("access_token")
-    with open("unloc.env", "w") as f:
-        f.write(f"UNLOC_CLIENT_ID={unloc_client_ID}\n")
-        f.write(f"UNLOC_CLIENT_SECRET={unloc_client_secret}\n")
-        f.write(f"UNLOC_TOKEN={token}\n")
+    if token:
+        with open("unloc.env", "w") as f:
+            f.write(f"UNLOC_CLIENT_ID={unloc_client_ID}\n")
+            f.write(f"UNLOC_CLIENT_SECRET={unloc_client_secret}\n")
+            f.write(f"UNLOC_TOKEN={token}\n")
     return token
 
-unloc_token = get_unloc_token()
+if not unloc_token:
+    unloc_token = get_unloc_token()
 
 unloc_headers = {
     "Authorization": f"Bearer {unloc_token}",
@@ -39,10 +42,22 @@ unloc_headers = {
 
 def get_locks():
     """Fetches all locks for project V51 from Unloc."""
+    global unloc_token, unloc_headers
     response = requests.get(
         f"https://api.unloc.app/v2/projects/{PROJECT_ID}/locks",
         headers=unloc_headers
     )
+    if response.status_code == 401:
+        # Token invalid or expired, get a new one and retry once
+        unloc_token = get_unloc_token()
+        unloc_headers = {
+            "Authorization": f"Bearer {unloc_token}",
+            "Accept": "application/json"
+        }
+        response = requests.get(
+            f"https://api.unloc.app/v2/projects/{PROJECT_ID}/locks",
+            headers=unloc_headers
+        )
     if response.status_code == 200:
         data = response.json()
         locks = data if isinstance(data, list) else data.get("results", data.get("locks", []))
@@ -76,6 +91,8 @@ def export_locks_csv():
             writer.writerow(lock)
 
     print(f"Locks exported to: {output_path}")
+
+
 # Issues:
 # Unloc requires a lock id when creating keys.
 # If it's 1 lock per apartment, fix this by doing a dictionary with apartmentID : Lock ID(s)
